@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚜 Repasador de Maquinaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-green-900 text-white min-h-screen flex flex-col items-center p-4">
+
+    <div id="setup" class="mt-20 text-center">
+        <h1 class="text-4xl font-bold mb-4 text-green-400">🚜 Agronomía: Maquinaria</h1>
+        <p class="text-slate-400 mb-8 italic">Ideal para el último repaso antes del parcial.</p>
+        <button onclick="startQuiz()"
+            class="bg-green-600 hover:bg-green-500 px-10 py-5 rounded-2xl font-bold text-xl shadow-lg transition-all transform hover:scale-105">
+            ¡Empezar Cuestionario!
+        </button>
+    </div>
+
+    <div id="quiz" class="hidden w-full max-w-xl mt-10">
+        <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700">
+            <div class="flex justify-between mb-6 text-slate-400 font-mono">
+                <span id="progress" class="bg-slate-700 px-3 py-1 rounded-full">Pregunta 1/X</span>
+                <span id="score" class="text-green-400">✓ 0</span>
+            </div>
+
+            <p id="question-text" class="text-2xl font-semibold mb-8 leading-tight"></p>
+
+            <div id="options-container" class="flex flex-col gap-3">
+            </div>
+
+            <div id="feedback" class="mt-6 p-4 rounded-xl hidden text-center font-bold"></div>
+            <button id="next-btn" onclick="nextQuestion()"
+                class="hidden mt-6 w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-bold text-lg uppercase tracking-wider shadow-lg">
+                Siguiente Pregunta →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // "BASE DE DATOS" LOCAL (Aquí es donde guardas todo)
+        const questions = [
+            {
+                type: "bool",
+                p: "¿La potencia al volante de un motor es siempre mayor que la potencia en la barra de tiro?",
+                r: "V",
+                o: "Correcto. Hay pérdidas por transmisión y rodadura."
+            },
+            {
+                type: "mult",
+                p: "¿Cuál es el componente encargado de variar la relación de transmisión en el tractor?",
+                choices: ["Cigüeñal", "Caja de cambios", "Diferencial", "Embrague"],
+                r: 1, // "Caja de cambios" es la opción 1 (empezando de 0)
+                o: "La caja de cambios permite adaptar la velocidad y el torque."
+            },
+            {
+                type: "bool",
+                p: "¿Un neumático con baja presión tiene menor área de contacto con el suelo?",
+                r: "F",
+                o: "Al contrario, a menor presión, mayor es el área (mancha de contacto)."
+            },
+            {
+                type: "mult",
+                p: "¿Qué tipo de motor suele usar la maquinaria agrícola pesada por su alto torque?",
+                choices: ["Naftero 2 tiempos", "Eléctrico", "Diésel 4 tiempos", "Rotativo"],
+                r: 2,
+                o: "El motor Diésel es el estándar por eficiencia y fuerza."
+            }
+        ];
+
+        // Mezclar preguntas al azar (opcional)
+        questions.sort(() => Math.random() - 0.5);
+
+        let currentIdx = 0;
+        let score = 0;
+
+        function startQuiz() {
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('quiz').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentIdx];
+            const container = document.getElementById('options-container');
+            const feedback = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+
+            document.getElementById('question-text').innerText = q.p;
+            document.getElementById('progress').innerText = `Pregunta ${currentIdx + 1}/${questions.length}`;
+
+            container.innerHTML = ""; // Limpiar botones anteriores
+            feedback.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+
+            if (q.type === "bool") {
+                // Generar 2 botones: V y F
+                createButton("VERDADERO", () => checkAnswer("V"));
+                createButton("FALSO", () => checkAnswer("F"));
+            } else {
+                // Generar botones para cada opción múltiple
+                q.choices.forEach((choice, index) => {
+                    createButton(choice, () => checkAnswer(index));
+                });
+            }
+        }
+
+        function createButton(text, callback) {
+            const btn = document.createElement("button");
+            btn.innerText = text;
+            btn.className = "bg-slate-700 hover:bg-slate-600 p-4 rounded-xl text-left font-medium transition-colors border border-slate-600";
+            btn.onclick = (e) => {
+                // Deshabilitar todos los botones tras click
+                const buttons = document.getElementById('options-container').querySelectorAll('button');
+                buttons.forEach(b => b.disabled = true);
+                callback();
+            };
+            document.getElementById('options-container').appendChild(btn);
+        }
+
+        function checkAnswer(userAns) {
+            const q = questions[currentIdx];
+            const feedback = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+
+            let isCorrect = (userAns === q.r);
+
+            if (isCorrect) {
+                score++;
+                feedback.innerText = "✅ ¡Correcto! " + (q.o || "");
+                feedback.className = "mt-6 p-4 rounded-xl text-center font-bold bg-green-900/40 text-green-300 border border-green-500/50";
+            } else {
+                let correctLabel = q.type === "bool" ? (q.r === "V" ? "Verdadero" : "Falso") : q.choices[q.r];
+                feedback.innerText = `❌ Incorrecto. La respuesta era: ${correctLabel}. ` + (q.o || "");
+                feedback.className = "mt-6 p-4 rounded-xl text-center font-bold bg-red-900/40 text-red-300 border border-red-500/50";
+            }
+
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            document.getElementById('score').innerText = `✓ ${score}`;
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                showQuestion();
+            } else {
+                // Pantalla final sencilla
+                document.getElementById('quiz').innerHTML = `
+                    <div class="text-center p-10">
+                        <h2 class="text-3xl font-bold mb-4">¡Cuestionario Finalizado!</h2>
+                        <p class="text-6xl mb-6">🎯</p>
+                        <p class="text-xl mb-6">Tu puntaje es: <span class="text-green-400 font-bold">${score}/${questions.length}</span></p>
+                        <button onclick="location.reload()" class="bg-indigo-600 px-6 py-3 rounded-xl font-bold">Reiniciar repaso</button>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>
